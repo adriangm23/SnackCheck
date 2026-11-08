@@ -1,0 +1,1467 @@
+{
+  "name": "SnackCheck",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "nutrition-check",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "e81c597d-96c0-4704-a2a1-1b039f03121a",
+      "name": "ESCANEO",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.2,
+      "position": [
+        208,
+        -96
+      ],
+      "webhookId": "973f9f61-ede8-4269-b9d5-a189f98f6c42"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 4
+          },
+          "conditions": [
+            {
+              "id": "2bbc356e-3f05-442b-b3e9-bbf0cc909e7d",
+              "leftValue": "={{ !$json.body || $json.body.barcode === undefined || $json.body.barcode === null || String($json.body.barcode).trim() === \"\" }}",
+              "rightValue": "={{ isNumber}}",
+              "operator": {
+                "type": "boolean",
+                "operation": "false",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "08907b9e-33e3-4fff-baad-eac7d4c84c6d",
+      "name": "¿Es un código de barras?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.4,
+      "position": [
+        432,
+        -96
+      ]
+    },
+    {
+      "parameters": {
+        "url": "=https://world.openfoodfacts.org/api/v2/product/{{ Number($json.body.barcode)}}.json?fields=product_name,brands,nutriscore_grade,nutriments",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true,
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "id": "875337c1-1abc-4e72-be1b-efc3da82bef5",
+      "name": "Consultar artículo",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        720,
+        -112
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 4
+          },
+          "conditions": [
+            {
+              "id": "e076855c-25a0-4dcc-913c-361233e236e9",
+              "leftValue": "={{ Number($json.status) === 1 && !!$json.product }}",
+              "rightValue": "=",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "e12e350e-0388-4e4c-8fcd-9b74ff7c98d4",
+      "name": "¿Artículo en la base de datos?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.4,
+      "position": [
+        912,
+        -112
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 4
+          },
+          "conditions": [
+            {
+              "id": "fa101cc1-8fe5-4218-9088-9e63e4009fee",
+              "leftValue": "={{ $('Consultar artículo').item.json.product.nutriments.salt_100g }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "empty",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "6af52b2f-33c7-4f47-8dd3-38f17ef28797",
+              "leftValue": "={{ $('Consultar artículo').item.json.product.nutriments.fat_100g }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "empty",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "84ccd027-6db9-45f8-a58b-97b1f4f9b095",
+              "leftValue": "={{ $('Consultar artículo').item.json.product.nutriments.sugars_100g }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "empty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "id": "241bc777-8c63-4539-b3d1-dea348f2dbc7",
+      "name": "¿Falta dato de nutriente?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.4,
+      "position": [
+        1312,
+        -128
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "1607bd1f-9a27-4a44-9a67-5060c8ce9a7f",
+              "name": "semaforo",
+              "value": -1,
+              "type": "number"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "8377a47f-3b9b-4c59-b17b-593194df86e0",
+      "name": "VARIABLE SALUD = NO INFO",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        2144,
+        -320
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 4
+          },
+          "conditions": [
+            {
+              "id": "6790e5cf-262e-4c1f-9e3c-3ea565b8a325",
+              "leftValue": "={{ $('¿Artículo en la base de datos?').item.json.product.nutriments.sugars_100g }}",
+              "rightValue": 22.5,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "bd7ab14e-04f5-4462-ac54-30c0ddce99eb",
+      "name": "¿Azúcar alto?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.4,
+      "position": [
+        1568,
+        -48
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 4
+          },
+          "conditions": [
+            {
+              "id": "6790e5cf-262e-4c1f-9e3c-3ea565b8a325",
+              "leftValue": "={{ $('¿Artículo en la base de datos?').item.json.product.nutriments.salt_100g }}",
+              "rightValue": 1.5,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "5c7fd115-cb07-4827-ba67-da124dc659a8",
+      "name": "¿Sal alta?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.4,
+      "position": [
+        1936,
+        -32
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 4
+          },
+          "conditions": [
+            {
+              "id": "6790e5cf-262e-4c1f-9e3c-3ea565b8a325",
+              "leftValue": "={{ $('¿Artículo en la base de datos?').item.json.product.nutriments.fat_100g }}",
+              "rightValue": 17.5,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "b084f285-8f88-422a-a17f-754e07e18ddd",
+      "name": "¿Grasa alta?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.4,
+      "position": [
+        2336,
+        -16
+      ]
+    },
+    {
+      "parameters": {
+        "model": "openai/gpt-oss-120b",
+        "options": {}
+      },
+      "id": "b70c005d-f6d9-444c-a1a6-51c9ea9d7c08",
+      "name": "Groq Chat Model1",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        1104,
+        256
+      ],
+      "credentials": {
+        "groqApi": {
+          "id": "F9Rgty5yrtqdzSn7",
+          "name": "Groq account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "allIncomingItems",
+        "options": {}
+      },
+      "id": "abe1b094-ddf1-4084-8255-1c1aad699455",
+      "name": "Respond to Webhook1",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1392,
+        96
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Con lenguaje amable, comunica el siguiente texto al usuario. \nTambién incluye al final un ejemplo de código de barras y dónde encontrarlo en los alimentos. NADA MÁS.\n\nERROR: El valor introducido no corresponde con un código de barras. \nSnackcheck ayuda a determinar si un alimento es saludable.\nIntroduce el código de barras de lo que estés a punto de comer y descubre que tan bueno es.\n\n",
+        "messages": {
+          "messageValues": []
+        },
+        "batching": {}
+      },
+      "id": "b7686d25-d5ba-4c5b-bce3-7c0286d2a97d",
+      "name": "ERROR: VALOR INVÁLIDO INTRODUCIDO",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        592,
+        96
+      ]
+    },
+    {
+      "parameters": {
+        "model": "openai/gpt-oss-120b",
+        "options": {}
+      },
+      "id": "18b69ce4-eff9-4d5a-a27c-82537f83645b",
+      "name": "Groq Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        592,
+        272
+      ],
+      "credentials": {
+        "groqApi": {
+          "id": "F9Rgty5yrtqdzSn7",
+          "name": "Groq account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "allIncomingItems",
+        "options": {}
+      },
+      "id": "09250600-f1a3-4caf-8580-a7879c743fbf",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        864,
+        96
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 4
+          },
+          "conditions": [
+            {
+              "id": "2cabcdf5-399d-4702-85a5-235cb83aae9a",
+              "leftValue": "={{ $('Consultar artículo').item.json.product.nutriscore_grade }}",
+              "rightValue": "unknown",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "id": "0e428e3b-a90b-4e6c-b078-8364a3b5d7cb",
+      "name": "¿Existe información Nutriscore?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.4,
+      "position": [
+        2928,
+        -160
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 4
+          },
+          "conditions": [
+            {
+              "id": "59cea2d0-9795-4392-b910-4e872c7833be",
+              "leftValue": "={{ Number($('¿Existe información Nutriscore?').item.json.semaforo) }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "lt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "3e2d1dce-d53f-4c72-973c-3e978f1aaed7",
+      "name": "¿Salud = no info?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.4,
+      "position": [
+        3232,
+        64
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "Con lenguaje amable, comunica el siguiente texto al usuario. \n\nERROR: Disculpa, los datos de este alimento no están completos en nuestra base por lo que no le podemos dar un veredicto fiable",
+        "batching": {}
+      },
+      "id": "69617406-6582-4715-8569-04b8e12ab786",
+      "name": "ERROR: VALOR INVÁLIDO INTRODUCIDO2",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        3488,
+        16
+      ]
+    },
+    {
+      "parameters": {
+        "model": "openai/gpt-oss-120b",
+        "options": {}
+      },
+      "id": "38d4749b-3a99-46ed-9244-d1ebdf4adde2",
+      "name": "Groq Chat Model2",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        3440,
+        208
+      ],
+      "credentials": {
+        "groqApi": {
+          "id": "F9Rgty5yrtqdzSn7",
+          "name": "Groq account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "allIncomingItems",
+        "options": {}
+      },
+      "id": "88b22791-aa05-4f5b-a802-c2b8765f66f6",
+      "name": "Respond to Webhook2",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        3904,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=A mayor es el número(0-3) menos saludable es el alimento\nEscribe con tono amable, claro y conciso en un parrafo, el veredicto final sobre que tan bueno es el alimento escaneado, basándote en:\n\nSemáforo nutrientes: {{ $json.semaforo }}\n\n\nAquí algunos ejemplos para basarte en cada caso:\n- Puedes disfrutarlo con tranquilidad.\n- Disfruta con moderación.\n- Nada recomendable, solo para contadas excepciones",
+        "batching": {}
+      },
+      "id": "02bbecf0-abf8-4143-882b-318f0d748b11",
+      "name": "Verificado en base a variable salud",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        3616,
+        144
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "allIncomingItems",
+        "options": {}
+      },
+      "id": "c37af966-2383-46ee-84e6-ac86a236fc33",
+      "name": "Respond to Webhook3",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        3904,
+        144
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Con lenguaje amable, comunica el siguiente texto al usuario. \nTambién incluye al final un ejemplo de código de barras y dónde encontrarlo en los alimentos. NADA MÁS.\n\nError 404: El artículo no está en la base de datos, pruebe con otro.\nSnackcheck ayuda a determinar si un alimento es saludable.\nIntroduce el código de barras de lo que estés a punto de comer y descubre que tan bueno es",
+        "batching": {}
+      },
+      "id": "ee386339-348c-47c0-8b72-8f701c657eb8",
+      "name": "ERROR: ARTÍCULO NO ENCONTRADO",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        1104,
+        96
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "8d9b3c42-814c-4da4-badc-cab648c408e6",
+              "name": "semaforo",
+              "value": "",
+              "type": "number"
+            },
+            {
+              "id": "76aafca4-386f-46d3-8cc4-5c0eb9e6d8d4",
+              "name": "nutriscore",
+              "value": "",
+              "type": "number"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        1136,
+        -128
+      ],
+      "id": "b1006b64-9ce2-4550-a410-3f42bf9d0ff9",
+      "name": "SET VARIABLES"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 4
+          },
+          "conditions": [
+            {
+              "id": "b3fd54a3-5a53-4cdb-9bd9-a95a29ae65ca",
+              "leftValue": "={{ $('¿Artículo en la base de datos?').item.json.product.nutriscore_grade }}",
+              "rightValue": "a",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            },
+            {
+              "id": "2b75be3a-f821-4c53-a61a-1720b9beebe9",
+              "leftValue": "={{ $('¿Artículo en la base de datos?').item.json.product.nutriscore_grade }}",
+              "rightValue": "b",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.4,
+      "position": [
+        3152,
+        -304
+      ],
+      "id": "171b1ff9-448a-4c89-b80b-26f7785c2023",
+      "name": "NS = AoB"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 4
+          },
+          "conditions": [
+            {
+              "id": "c82f363b-01ac-452f-ae57-67aa25a6551d",
+              "leftValue": "={{ $('¿Artículo en la base de datos?').item.json.product.nutriscore_grade }}",
+              "rightValue": "d",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            },
+            {
+              "id": "7c37eef4-40cf-43b1-af61-8715990de7ec",
+              "leftValue": "={{ $('¿Artículo en la base de datos?').item.json.product.nutriscore_grade }}",
+              "rightValue": "e",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.4,
+      "position": [
+        3344,
+        -224
+      ],
+      "id": "c5e72a90-ce5c-47de-a467-339ff4863bc1",
+      "name": "NS = DoE"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "68974453-e399-4e89-923f-d0502d4a964f",
+              "name": "nutriscore",
+              "value": 0,
+              "type": "number"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        3440,
+        -464
+      ],
+      "id": "209d8c7c-b09f-4cad-9dbd-615516762bf9",
+      "name": "NS = SALUDABLE"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "7a0694dc-0ea8-44e9-af54-00ec53572936",
+              "name": "nutriscore",
+              "value": 3,
+              "type": "number"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        3616,
+        -368
+      ],
+      "id": "79c16b6c-f316-4075-92cc-bceb337de526",
+      "name": "NS = NO SALUDABLE"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "fad019fc-fcf8-4596-a122-e5435a5a5260",
+              "name": "nutriscore",
+              "value": "2",
+              "type": "number"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        3616,
+        -208
+      ],
+      "id": "e2c6e661-538e-4ae6-b68d-05d1bb7324bd",
+      "name": "NS = MODERADO"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 4
+          },
+          "conditions": [
+            {
+              "id": "20b80dc1-e0fa-47de-889b-6e442e57bf60",
+              "leftValue": "={{ $json.nutriscore }}",
+              "rightValue": "={{ $('NS = DoE').item.json.semaforo }}",
+              "operator": {
+                "type": "number",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.4,
+      "position": [
+        3904,
+        -384
+      ],
+      "id": "2ef66b7c-1df8-4fdf-b990-0d0104c26f73",
+      "name": "¿salud = ns?"
+    },
+    {
+      "parameters": {
+        "model": "openai/gpt-oss-120b",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        4608,
+        -416
+      ],
+      "id": "4796b1d8-e64a-4b48-ab84-8d26695c2841",
+      "name": "Groq Chat Model3",
+      "credentials": {
+        "groqApi": {
+          "id": "F9Rgty5yrtqdzSn7",
+          "name": "Groq account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "allIncomingItems",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        4912,
+        -592
+      ],
+      "id": "44817008-fd57-43f3-9606-6e3b0b28421f",
+      "name": "Respond to Webhook4"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 4
+          },
+          "conditions": [
+            {
+              "id": "d7e8f818-f5fc-47c7-8c8f-387978dbb3e6",
+              "leftValue": "={{ Number($('NS = AoB').item.json.semaforo) }}",
+              "rightValue": "noInfo",
+              "operator": {
+                "type": "number",
+                "operation": "empty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.4,
+      "position": [
+        4096,
+        -336
+      ],
+      "id": "01fe2e6c-5d53-476b-a586-8bd8cd37be3b",
+      "name": "salud = noInfo"
+    },
+    {
+      "parameters": {
+        "model": "openai/gpt-oss-120b",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        4624,
+        -48
+      ],
+      "id": "8251af35-3702-44c0-aef8-b2ba6ff247ed",
+      "name": "Groq Chat Model4",
+      "credentials": {
+        "groqApi": {
+          "id": "F9Rgty5yrtqdzSn7",
+          "name": "Groq account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "allIncomingItems",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        4928,
+        -224
+      ],
+      "id": "a8763a2c-05e7-497f-b379-3c9ee6b31fb8",
+      "name": "Respond to Webhook5"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=A mayor es el número(0-3) menos saludable es el alimento\nEscribe con tono amable, claro y conciso en un parrafo, el veredicto final sobre que tan bueno es el alimento escaneado, basándote en:\n\nNutri-Score: {{ $('¿Artículo en la base de datos?').item.json.product.nutriscore_grade }}\n\n\nAquí algunos ejemplos para basarte en cada caso:\n- Puedes disfrutarlo con tranquilidad.\n- Disfruta con moderación.\n- Nada recomendable, solo para contadas excepciones",
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        4608,
+        -592
+      ],
+      "id": "49fbdccb-a4d5-4cc4-9d27-ebd7e3f22a22",
+      "name": "Veredicto basado en Nutriscore"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=A mayor es el número(0-3) menos saludable es el alimento\nEscribe con tono amable, claro y conciso en un parrafo, el veredicto final sobre que tan bueno es el alimento escaneado, basándote en:\n\nSemáforo nutrientes: {{ Number($('NS = AoB').item.json.semaforo) }}\n\n\nAquí algunos ejemplos para basarte en cada caso:\n- Puedes disfrutarlo con tranquilidad.\n- Disfruta con moderación.\n- Nada recomendable, solo para contadas excepciones",
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        4624,
+        -224
+      ],
+      "id": "ad4f6962-eaa3-4858-8d80-59d7f00c36fa",
+      "name": "Veredicto basado en nutrientes"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "abeda1b2-839d-43ba-9c98-edc52fba66bb",
+              "name": "semaforo",
+              "value": "={{ Number($json.semaforo) + 1 }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "9ecd8463-52d0-4b69-9d3c-eab5884be1a9",
+      "name": "SEMÁFORO +1..",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        2512,
+        -128
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "abeda1b2-839d-43ba-9c98-edc52fba66bb",
+              "name": "semaforo",
+              "value": "={{ Number($json.semaforo) + 1 }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "20c319e8-c551-447a-818f-db18acfb1cee",
+      "name": "SEMÁFORO +1.",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        2144,
+        -144
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "abeda1b2-839d-43ba-9c98-edc52fba66bb",
+              "name": "semaforo",
+              "value": "={{ Number($json.semaforo) + 1 }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "393572d6-b48f-4ec5-bd1b-f96e24ef98a1",
+      "name": "SEMÁFORO +1",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        1760,
+        -144
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 4
+          },
+          "conditions": [
+            {
+              "id": "f133e667-13cf-44bd-bb21-2d820261e1e3",
+              "leftValue": "={{ $json.nutriscore }}",
+              "rightValue": "={{ Number($('NS = AoB').item.json.semaforo) }}",
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.4,
+      "position": [
+        4320,
+        -320
+      ],
+      "id": "61db0eea-3d18-47c7-8cbb-056d796152f3",
+      "name": "¿peor veredicto ns?"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "ESCANEO": {
+      "main": [
+        [
+          {
+            "node": "¿Es un código de barras?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "¿Es un código de barras?": {
+      "main": [
+        [
+          {
+            "node": "Consultar artículo",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "ERROR: VALOR INVÁLIDO INTRODUCIDO",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Consultar artículo": {
+      "main": [
+        [
+          {
+            "node": "¿Artículo en la base de datos?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "¿Artículo en la base de datos?": {
+      "main": [
+        [
+          {
+            "node": "SET VARIABLES",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "ERROR: ARTÍCULO NO ENCONTRADO",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "¿Falta dato de nutriente?": {
+      "main": [
+        [
+          {
+            "node": "VARIABLE SALUD = NO INFO",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "¿Azúcar alto?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "¿Azúcar alto?": {
+      "main": [
+        [
+          {
+            "node": "SEMÁFORO +1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "¿Sal alta?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "¿Sal alta?": {
+      "main": [
+        [
+          {
+            "node": "SEMÁFORO +1.",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "¿Grasa alta?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "¿Grasa alta?": {
+      "main": [
+        [
+          {
+            "node": "SEMÁFORO +1..",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "¿Existe información Nutriscore?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "ERROR: ARTÍCULO NO ENCONTRADO",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ERROR: VALOR INVÁLIDO INTRODUCIDO": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "ERROR: VALOR INVÁLIDO INTRODUCIDO",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "¿Existe información Nutriscore?": {
+      "main": [
+        [
+          {
+            "node": "NS = AoB",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "¿Salud = no info?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "¿Salud = no info?": {
+      "main": [
+        [
+          {
+            "node": "ERROR: VALOR INVÁLIDO INTRODUCIDO2",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Verificado en base a variable salud",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ERROR: VALOR INVÁLIDO INTRODUCIDO2": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model2": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "ERROR: VALOR INVÁLIDO INTRODUCIDO2",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "Verificado en base a variable salud",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verificado en base a variable salud": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ERROR: ARTÍCULO NO ENCONTRADO": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "VARIABLE SALUD = NO INFO": {
+      "main": [
+        [
+          {
+            "node": "¿Existe información Nutriscore?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SET VARIABLES": {
+      "main": [
+        [
+          {
+            "node": "¿Falta dato de nutriente?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "NS = AoB": {
+      "main": [
+        [
+          {
+            "node": "NS = SALUDABLE",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "NS = DoE",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "NS = DoE": {
+      "main": [
+        [
+          {
+            "node": "NS = NO SALUDABLE",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "NS = MODERADO",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "NS = NO SALUDABLE": {
+      "main": [
+        [
+          {
+            "node": "¿salud = ns?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "NS = SALUDABLE": {
+      "main": [
+        [
+          {
+            "node": "¿salud = ns?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "NS = MODERADO": {
+      "main": [
+        [
+          {
+            "node": "¿salud = ns?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "¿salud = ns?": {
+      "main": [
+        [
+          {
+            "node": "Veredicto basado en Nutriscore",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "salud = noInfo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model3": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Veredicto basado en Nutriscore",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "salud = noInfo": {
+      "main": [
+        [
+          {
+            "node": "Veredicto basado en Nutriscore",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "¿peor veredicto ns?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model4": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Veredicto basado en nutrientes",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Veredicto basado en Nutriscore": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Veredicto basado en nutrientes": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook5",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SEMÁFORO +1..": {
+      "main": [
+        [
+          {
+            "node": "¿Existe información Nutriscore?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SEMÁFORO +1.": {
+      "main": [
+        [
+          {
+            "node": "¿Grasa alta?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SEMÁFORO +1": {
+      "main": [
+        [
+          {
+            "node": "¿Sal alta?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "¿peor veredicto ns?": {
+      "main": [
+        [
+          {
+            "node": "Veredicto basado en Nutriscore",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Veredicto basado en nutrientes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "88e61b6e-07f9-419c-9e1f-625518699dff",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "070978b89c91d4bb96d51c3d293b097daf383a310ae4eb82e068f65bd772df87"
+  },
+  "nodeGroups": [],
+  "id": "sLIdMgcvoB8t6I38",
+  "tags": []
+}
